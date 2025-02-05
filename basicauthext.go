@@ -254,18 +254,6 @@ func (c *Cache) makeRoom() {
 	}
 }
 
-// Account contains a username and password.
-type Account struct {
-	// A user's username.
-	Username string `json:"username"`
-
-	// The user's hashed password, in Modular Crypt Format (with `$` prefix)
-	// or base64-encoded.
-	Password string `json:"password"`
-
-	password []byte
-}
-
 // Interface guards
 var (
 	_ caddy.Provisioner       = (*HTTPBasicAuthExt)(nil)

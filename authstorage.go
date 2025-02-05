@@ -20,7 +20,7 @@ func AccountInfoCheckGroup(group string) bool {
 	return patternCheckGroup.MatchString(group)
 }
 
-type AccountInfo struct {
+type Account struct {
 
 	// A user's username.
 	Username string
@@ -36,7 +36,7 @@ type AccountInfo struct {
 }
 
 // Check if a user is in a group; if group is empty, always return true
-func (info *AccountInfo) InGroup(group string) bool {
+func (info *Account) InGroup(group string) bool {
 	if group == "" {
 		return true
 	}
@@ -48,7 +48,7 @@ func (info *AccountInfo) InGroup(group string) bool {
 }
 
 // Add a group to a user
-func (info *AccountInfo) AddGroup(group string) bool {
+func (info *Account) AddGroup(group string) bool {
 	if !AccountInfoCheckGroup(group) {
 		return false
 	}
@@ -60,7 +60,7 @@ func (info *AccountInfo) AddGroup(group string) bool {
 }
 
 // Remove a group from a user
-func (info *AccountInfo) RemoveGroup(group string) {
+func (info *Account) RemoveGroup(group string) {
 	delete(info.Groups, group)
 }
 
@@ -74,10 +74,10 @@ type Accounts struct {
 	Hash caddyauth.Comparer
 
 	// The accounts in the file
-	Accounts map[string]*AccountInfo
+	Accounts map[string]*Account
 }
 
-func (a *Accounts) GetAccount(username string) *AccountInfo {
+func (a *Accounts) GetAccount(username string) *Account {
 	val, ok := a.Accounts[username]
 	if !ok {
 		return nil
@@ -96,7 +96,7 @@ func ParseAccountsFromFile(filePath string, hash caddyauth.Comparer) (*Accounts,
 	result := &Accounts{
 		File:     filePath,
 		Hash:     hash,
-		Accounts: make(map[string]*AccountInfo),
+		Accounts: make(map[string]*Account),
 	}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -108,7 +108,7 @@ func ParseAccountsFromFile(filePath string, hash caddyauth.Comparer) (*Accounts,
 		if len(parts) < 3 {
 			return nil, fmt.Errorf("invalid line: %s", line)
 		}
-		account := &AccountInfo{
+		account := &Account{
 			Username: string(parts[0]),
 			Password: nil,
 			Groups:   make(map[string]struct{}),
