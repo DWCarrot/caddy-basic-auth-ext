@@ -1,0 +1,31 @@
+{
+	admin off
+	order basic_auth_ext before basic_auth
+}
+
+http://localhost:8080 {
+	bind 127.0.0.1
+
+	route /test {
+		basic_auth_ext {
+			file ./accounts-demo.txt
+			permission demo1
+		}
+		respond "User authenticated with ID: {http.auth.user.id} @ {http.auth.user.groups}"
+	}
+
+	route /demo2 {
+		basic_auth_ext {
+			file ./accounts-demo.txt
+			permission demo2
+		}
+		respond "User authenticated with ID: {http.auth.user.id} @ {http.auth.user.groups}"
+	}
+
+	route /authenticated {
+		basic_auth_ext {
+			file ./accounts-demo.txt
+		}
+		respond "User authenticated with ID: {http.auth.user.id}"
+	}
+}

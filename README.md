@@ -25,40 +25,68 @@ username    group1,group2,group3    hashed-password
 
 `groups` are comma-separated, group names are case-sensitive, should only contain alphanumeric characters and underscores
 
-`hashed-password` is in Modular Crypt Format; for example, the result of `caddy hash-password --algorithm <hash_algorithm> <password>`
+`hashed-password` is in Modular Crypt Format; for example, the result of `caddy hash-password --algorithm <hash_algorithm> --plaintext <password>`
 
 
 
-## Sample Caddyfile & Account File
+## Local demo
 
-### Caddyfile
+[Caddyfile.demo](./Caddyfile.demo) uses [accounts-demo.txt](./accounts-demo.txt)
+with bcrypt passwords. These credentials are intentionally public and only for demo use:
 
+| Username | Password | Groups |
+| --- | --- | --- |
+| `test` | `demo-password-1` | `demo1,demo2` |
+| `test2` | `demo-password-2` | `demo2` |
+
+Use a custom Caddy binary containing this module. In the homelab-gateway checkout,
+build it with the full command in the parent README, then run from this directory
+so the relative accounts file path resolves correctly:
+
+```sh
+cd caddy-basic-auth-ext
+../caddy adapt --config ./Caddyfile.demo --adapter caddyfile --pretty --validate
+../caddy run --config ./Caddyfile.demo --adapter caddyfile
 ```
 
-{
-	order basic_auth_ext before basic_auth
-}
+On Windows, use `../caddy.exe` for these commands and `curl.exe` for the requests
+below. For a standalone module checkout, use your custom `caddy` binary instead.
+The demo listens on `127.0.0.1:8080` over HTTP and disables the admin API. Stop it
+with Ctrl+C.
 
-api.example.com {
-	route /test {
+### Test requests
 
-		basic_auth_ext {
-			file /path/to/accounts-demo.txt
-			permission demo1
-		}
+Run these in another terminal; `-i` includes the HTTP status:
 
+```sh
+# 200: test belongs to demo1
+curl -i -u test:demo-password-1 http://localhost:8080/test
 
-		respond "User authenticated with ID: {http.auth.user.id} @ {http.auth.user.groups}"
-	}
-}
+# 401: test2 has valid credentials but does not belong to demo1
+curl -i -u test2:demo-password-2 http://localhost:8080/test
 
+# 200: both users belong to demo2
+curl -i -u test:demo-password-1 http://localhost:8080/demo2
+curl -i -u test2:demo-password-2 http://localhost:8080/demo2
+
+# 200: no permission requirement; any valid account is accepted
+curl -i -u test2:demo-password-2 http://localhost:8080/authenticated
+
+# 401: missing or incorrect credentials
+curl -i http://localhost:8080/test
+curl -i -u test:wrong-password http://localhost:8080/test
 ```
 
-### Account
+A successful `/test` response is
+`User authenticated with ID: test @ demo1`. The `{http.auth.user.groups}`
+placeholder contains the route's required permission, not the account's complete
+group list. Missing group membership returns 401, just like invalid credentials.
 
-`accounts-demo.txt`
+To generate a replacement bcrypt hash:
 
+```sh
+caddy hash-password --algorithm bcrypt --plaintext demo-password-1
 ```
-test    demo1,demo2     $2a$14$LfmwCC8zryYMswbPZ8MxDOi0.BJveyPHat6o4UGekAZd.o8ZQRMsa
-test2   demo2           $2a$14$drZc7KI0tCqdG.0mNWTgl.KkH8thh4rI/QMdxt2/FJEWDPOdJ9fGq
-```
+
+Restart the demo after editing the accounts file; loaded accounts are cached for
+the lifetime of the process.
