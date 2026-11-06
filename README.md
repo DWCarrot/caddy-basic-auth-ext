@@ -4,6 +4,9 @@ extend caddy's basic auth module with file-recorded accounts (like nginx) and si
 
 ## Usage
 
+The Caddyfile parser rejects unknown subdirectives, missing or excess arguments,
+and nested option blocks. `file` and `permission` each take exactly one argument.
+
 ### Caddyfile
 
 ```

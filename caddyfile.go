@@ -53,7 +53,7 @@ func (hba *HTTPBasicAuthExt) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 		hashName = args[0]
 		hba.Realm = args[1]
 	default:
-		d.ArgErr()
+		return d.ArgErr()
 	}
 
 	switch hashName {
@@ -65,7 +65,8 @@ func (hba *HTTPBasicAuthExt) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 
 	hba.HashRaw = caddyconfig.JSONModuleObject(cmp, "algorithm", hashName, nil)
 
-	for d.NextBlock(0) {
+	nesting := d.Nesting()
+	for d.NextBlock(nesting) {
 		switch d.Val() {
 		case "file":
 			if !d.NextArg() {
@@ -77,6 +78,14 @@ func (hba *HTTPBasicAuthExt) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 				return d.ArgErr()
 			}
 			hba.Permission = d.Val()
+		default:
+			return d.Errf("unrecognized subdirective: %s", d.Val())
+		}
+		if d.NextArg() {
+			return d.ArgErr()
+		}
+		if d.NextBlock(nesting + 1) {
+			return d.Err("nested blocks are not supported")
 		}
 	}
 
